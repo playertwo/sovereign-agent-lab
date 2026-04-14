@@ -27,14 +27,14 @@ dev = [
     "ruff>=0.9.0",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+#[build-system]
+#requires = ["setuptools>=61.0"]
+#build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
+#[tool.setuptools]
 # Explicit package list so the build system knows what to include.
 # sovereign_agent is the persistent agent project that grows each week.
-packages = ["sovereign_agent", "sovereign_agent.tools", "sovereign_agent.agents", "sovereign_agent.tests"]
+#packages = ["sovereign_agent", "sovereign_agent.tools", "sovereign_agent.agents", "sovereign_agent.tests"]
 
 [tool.uv]
 # uv manages the virtual environment. Run `uv sync` to create it.

@@ -26,7 +26,7 @@ from pathlib import Path
 # Add the student_pack root to path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from sovereign_agent.tools.venue_tools import (
+from ..tools.venue_tools import (
     check_pub_availability,
     get_edinburgh_weather,
     calculate_catering_cost,

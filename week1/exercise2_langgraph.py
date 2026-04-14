@@ -45,10 +45,13 @@ Then fill in week1/answers/ex2_answers.py.
 """
 
 import json
+import logging
 import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+logging.getLogger("langchain").setLevel(logging.DEBUG)
 
 # ── Import from the persistent sovereign_agent project ────────────────────────
 # This is the import pattern you'll use in Weeks 2-5 as well.
@@ -72,6 +75,7 @@ def print_result(result: dict, label: str) -> None:
     print(f"{'=' * 65}\n")
 
     for entry in result["full_trace"]:
+        #logging.warning(result)
         role = entry["role"].upper()
         if role == "TOOL_CALL":
             args_str = json.dumps(entry.get("args", {}))[:80]

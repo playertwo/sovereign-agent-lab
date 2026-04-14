@@ -93,10 +93,22 @@ async def discover_tools(server_script: str) -> list:
             raw   = await session.list_tools()
             tools = []
             for t in raw.tools:
+                # Build a Pydantic model from the MCP tool's input schema
+                # so LangChain knows which arguments to extract from the LLM response.
+                from pydantic import create_model
+                fields = {}
+                schema = t.inputSchema or {}
+                for prop_name, prop_info in schema.get("properties", {}).items():
+                    json_type = prop_info.get("type", "string")
+                    py_type = {"string": str, "integer": int, "number": float, "boolean": bool}.get(json_type, str)
+                    fields[prop_name] = (py_type, ...)
+                args_model = create_model(f"{t.name}Args", **fields)
+
                 lc_tool = StructuredTool.from_function(
                     func=_make_mcp_caller(t.name, server_script),
                     name=t.name,
                     description=t.description or f"MCP tool: {t.name}",
+                    args_schema=args_model,
                 )
                 tools.append(lc_tool)
             return tools, [t.name for t in raw.tools]
@@ -106,16 +118,19 @@ async def discover_tools(server_script: str) -> list:
 
 def extract_trace(result: dict) -> list:
     trace = []
+
     for m in result["messages"]:
         role    = getattr(m, "type", "unknown")
         content = m.content
-        if isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "tool_use":
-                    trace.append({"role": "tool_call", "tool": block["name"],
-                                  "args": block.get("input", {})})
-        elif content:
+        if content:
             trace.append({"role": role, "content": str(content)})
+            if role == "ai":
+                final_answer = str(content)
+        else:
+            for tool_call in m.tool_calls:
+                trace.append({"role": "tool_call", "tool": tool_call["name"],
+                                  "args": tool_call.get("args", {})})
+            
     return trace
 
 
@@ -135,7 +150,7 @@ async def main() -> None:
     llm = ChatOpenAI(
         base_url="https://api.tokenfactory.nebius.com/v1/",
         api_key=os.getenv("NEBIUS_KEY"),
-        model="meta-llama/Llama-3.3-70B-Instruct",
+        model="Qwen/Qwen3-Next-80B-A3B-Thinking",
         temperature=0,
     )
 

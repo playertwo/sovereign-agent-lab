@@ -183,7 +183,8 @@ def is_correct(answer: str) -> bool:
 # ─── Part A ───────────────────────────────────────────────────────────────────
 
 MAIN_MODEL  = "meta-llama/Llama-3.3-70B-Instruct"
-SMALL_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+#SMALL_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+SMALL_MODEL = "google/gemma-2-2b-it"
 
 
 def run_part(label: str, venues: str, model: str) -> dict:

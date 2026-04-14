@@ -35,7 +35,7 @@ VENUES = {
     "The Albanach": {
         "capacity": 180,
         "vegan": True,
-        "status": "available",
+        "status": "full",
         "address": "2 Hunter Square, Edinburgh",
     },
     "The Haymarket Vaults": {
@@ -68,9 +68,7 @@ def search_venues(min_capacity: int, requires_vegan: bool) -> str:
     min_capacity: minimum number of guests the venue must hold
     requires_vegan: if True, only venues with a vegan menu are returned
     """
-    matches = [
-        {"name": name, **info}
-        for name, info in VENUES.items()
+    matches = [ {"name": name, **info} for name, info in VENUES.items()
         if info["capacity"] >= min_capacity
         and (not requires_vegan or info["vegan"])
         and info["status"] == "available"

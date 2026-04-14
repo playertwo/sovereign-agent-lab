@@ -45,11 +45,17 @@ The agent picks up the new capability automatically — no other changes needed.
 """
 
 import json
+import logging
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
+logging.getLogger("langchain").setLevel(logging.DEBUG)
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Import tools from the shared tool layer
 # This import path is why the project structure matters —
 # sovereign_agent/ is a Python package that can be imported from anywhere
@@ -69,7 +75,7 @@ load_dotenv()
 llm = ChatOpenAI(
     base_url="https://api.tokenfactory.nebius.com/v1/",
     api_key=os.getenv("NEBIUS_KEY"),
-    model="meta-llama/Llama-3.3-70B-Instruct",
+    model="Qwen/Qwen3-Next-80B-A3B-Thinking",
     temperature=0,
 )
 
@@ -87,6 +93,8 @@ TOOLS = [
 # Build the agent once at module load time.
 # Rebuilding it on every call would be wasteful.
 _agent = create_react_agent(llm, TOOLS)
+
+logging.warning(_agent.__dict__)
 
 
 # ─── Public interface ─────────────────────────────────────────────────────────
@@ -109,6 +117,7 @@ def run_research_agent(task: str, max_turns: int = 8) -> dict:
     This return shape is the contract that Week 2+ code will depend on.
     Do not change the key names.
     """
+    logging.warning(f"invoking agent {task}")
     result = _agent.invoke(
         {"messages": [("user", task)]},
         config={"recursion_limit": max_turns * 2},  # LangGraph uses steps, not turns
@@ -121,23 +130,33 @@ def run_research_agent(task: str, max_turns: int = 8) -> dict:
     for m in result["messages"]:
         role    = getattr(m, "type", "unknown")
         content = m.content
+        logging.warning(m)
 
         # Tool-call messages have structured list content
-        if isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "tool_use":
-                    entry = {
-                        "tool": block["name"],
-                        "args": block.get("input", {}),
-                    }
-                    tool_calls_made.append(entry)
-                    full_trace.append({"role": "tool_call", **entry})
-            continue
+        # if isinstance(content, list):
+        #     for block in content:
+        #         if isinstance(block, dict) and block.get("type") == "tool_use":
+        #             entry = {
+        #                 "tool": block["name"],
+        #                 "args": block.get("input", {}),
+        #             }
+        #             tool_calls_made.append(entry)
+        #             full_trace.append({"role": "tool_call", **entry})
+        #     continue
 
         if content:
             full_trace.append({"role": role, "content": str(content)})
             if role == "ai":
                 final_answer = str(content)
+        else:
+            for tool_call in m.tool_calls:
+                entry = {
+                        "tool": tool_call["name"],
+                        "args": tool_call.get("args", {}),
+                    }
+                tool_calls_made.append(entry)
+                full_trace.append({"role": "tool_call", **entry})
+            
 
     return {
         "final_answer":    final_answer,
